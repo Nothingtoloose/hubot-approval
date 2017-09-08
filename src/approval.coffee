@@ -9,7 +9,7 @@
 #           if false and user in approvers group, auto-approve
 #
 # Commands:
-#   hubot approve MAGIC_WORD - Approve a command
+#   hubot bestätige <vorgegebenes Wort> - Dieses Kommando bestätigt einen Befehl, damit dieser ausgeführt werden kann
 #
 # Configuration:
 #   HUBOT_APPROVAL_TIMEOUT - Number of minutes before command expires (default: 1)
@@ -27,6 +27,7 @@
 #
 # Author:
 #   Michael Ansel <mansel@box.com>
+#   Christian Koehler
 
 fs = require 'fs'
 path = require 'path'
@@ -60,32 +61,32 @@ class AuthApproval
           next: next
           done: done
 
-        context.response.reply "I need approval for that from someone in '#{context.listener.options.approval.group}'. In order to approve, say '#{@robot.name} approve #{magic_word}'."
+        context.response.reply "Jemand aus der Gruppe `#{context.listener.options.approval.group}` hat nun 1 Minute Zeit den Befehl zu bestätigen. Zur Bestätigung sagen Sie bitte: `@#{@robot.name} bestätige #{magic_word}`"
+
         # Clean up if not approved within the time limit
         setTimeout (=> delete @approvals[magic_word]), APPROVAL_TIMEOUT_MS
 
-    @robot.respond /approve (.+)$/, (msg) =>
+    @robot.respond /bestätige (.+)$/, (msg) =>
       magic_word = msg.match[1]
       attempt = @approvals[magic_word]
       if not attempt?
-        msg.reply "I don't know what you're talking about..."
+        msg.reply "Diese Aktion war nicht gültig. Versuchen Sie es bitte erneut."
         return
 
       msg.message.user.groups (userGroups) =>
         if attempt.context.response.message.user is msg.message.user
-          msg.reply "Oh, come on! Self-approving isn't allowed!"
+          msg.reply "Es dürfen nur andere Mitglieder in der Gruppe den Befehl bestätigen. Eine Selbst-Bestätigung ist nicht möglich."
         else if attempt.context.listener.options.approval.group in userGroups
-          msg.reply "Approved! Executing '#{attempt.context.response.match[0]}' for #{attempt.context.response.message.user.name}"
+          msg.reply "Glückwunsch. Der Befehl `#{attempt.context.response.match[0]}` für den Benutzer `#{attempt.context.response.message.user.name}` wurde bestätigt."
           delete @approvals[magic_word]
           attempt.next(attempt.done)
         else
-          msg.reply "Sorry, only someone in '#{attempt.context.listener.options.approval.group}' can approve this command!"
-
+          msg.reply "Entschuldigung. Nur Mitglieder der Gruppe `#{attempt.context.listener.options.approval.group}` können den Befehl bestätigen."
     @robot.respond /reject (.+)$/, (msg) =>
       magic_word = msg.match[1]
       attempt = @approvals[magic_word]
       if not attempt?
-        msg.reply "I don't know what you're talking about..."
+        msg.reply "Diese Aktion war nicht gültig. Versuchen Sie es bitte erneut."
         return
 
       msg.message.user.groups (userGroups) =>
