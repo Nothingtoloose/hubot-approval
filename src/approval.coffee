@@ -50,9 +50,15 @@ class AuthApproval
       context.response.message.user.groups (userGroups) =>
         # Unless peer approval is required, auto-approve if user is in the
         # approvers group
-        if not context.listener.options.approval.peer and
-           context.listener.options.approval.group in userGroups
+        if not context.listener.options.approval.peer and context.listener.options.approval.group in userGroups
           return next()
+        else if not context.listener.options.approval.peer and context.listener.options.approval.group not in userGroups 
+          context.response.reply "Du verfügst nicht über die benötigte Rolle `#{context.listener.options.approval.group}` zum Auführen des Befehls."
+          return
+        else if context.listener.options.approval.peer and context.listener.options.approval.group not in userGroups 
+          context.response.reply "Du verfügst nicht über die benötigte Rolle `#{context.listener.options.approval.group}` zum Auführen des Befehls."
+          return
+        else
 
         # Get a unique magic word (not already in use)
         magic_word = @generateMagicWord exclude: Object.keys(@approvals)
@@ -61,7 +67,7 @@ class AuthApproval
           next: next
           done: done
 
-        context.response.reply "Jemand aus der Gruppe `#{context.listener.options.approval.group}` hat nun 1 Minute Zeit den Befehl zu bestätigen. Zur Bestätigung sagen Sie bitte: `@#{@robot.name} bestätige #{magic_word}`"
+        context.response.reply "Jemand mit der Rolle `#{context.listener.options.approval.group}` hat nun 1 Minute Zeit den Befehl zu bestätigen. Zur Bestätigung sagen Sie bitte: `@#{@robot.name} bestätige #{magic_word}`"
 
         # Clean up if not approved within the time limit
         setTimeout (=> delete @approvals[magic_word]), APPROVAL_TIMEOUT_MS
@@ -81,7 +87,7 @@ class AuthApproval
           delete @approvals[magic_word]
           attempt.next(attempt.done)
         else
-          msg.reply "Entschuldigung. Nur Mitglieder der Gruppe `#{attempt.context.listener.options.approval.group}` können den Befehl bestätigen."
+          msg.reply "Entschuldigung. Nur Benutzer mit der Rolle `#{attempt.context.listener.options.approval.group}` können den Befehl bestätigen."
     @robot.respond /reject (.+)$/, (msg) =>
       magic_word = msg.match[1]
       attempt = @approvals[magic_word]
