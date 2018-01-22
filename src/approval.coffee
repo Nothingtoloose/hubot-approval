@@ -8,9 +8,6 @@
 #           if true, peer approvals are required;
 #           if false and user in approvers group, auto-approve
 #
-# Commands:
-#   hubot bestätige <vorgegebenes Wort> - Dieses Kommando bestätigt einen Befehl, damit dieser ausgeführt werden kann
-#
 # Configuration:
 #   HUBOT_APPROVAL_TIMEOUT - Number of minutes before command expires (default: 1)
 #
